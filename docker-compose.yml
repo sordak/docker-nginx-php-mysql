@@ -8,8 +8,8 @@ services:
             - "./web:/var/www/html"
             - "./etc/nginx/default.template.conf:/etc/nginx/conf.d/default.template"
         ports:
-            - "8000:80"
-            - "3000:443"
+            - "80:80"
+            - "443:443"
         environment:
             - NGINX_HOST=${NGINX_HOST}
         command: /bin/sh -c "envsubst '$$NGINX_HOST' < /etc/nginx/conf.d/default.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
@@ -17,17 +17,23 @@ services:
         depends_on:
             - php
             - mysqldb
+        networks:
+            - mim_cluster
     php:
         image: nanoninja/php-fpm:${PHP_VERSION}
         restart: always
         volumes:
             - "./etc/php/php.ini:/usr/local/etc/php/conf.d/php.ini"
             - "./web:/var/www/html"
+        networks:
+            - mim_cluster
     composer:
         image: "composer"
         volumes:
             - "./web/app:/app"
         command: install
+        networks:
+            - mim_cluster
     myadmin:
         image: phpmyadmin/phpmyadmin
         container_name: phpmyadmin
@@ -39,6 +45,8 @@ services:
         restart: always
         depends_on:
             - mysqldb
+        networks:
+            - mim_cluster
     mysqldb:
         image: mysql:${MYSQL_VERSION}
         container_name: ${MYSQL_HOST}
@@ -54,3 +62,9 @@ services:
             - "8989:3306"
         volumes:
             - "./data/db/mysql:/var/lib/mysql"
+        networks:
+            - mim_cluster
+networks:
+    mim_cluster:
+        external:
+            name: mim_cluster
